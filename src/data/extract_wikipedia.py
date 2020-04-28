@@ -51,19 +51,19 @@ def get_albums(url, headers):
     Returns
     --------
     A dict with the album names and wikipedia album URLs
-    
+
     Parameters
     ---------
     url [str]: the full URL of the artist wikipedia page to pass to the requests.get() method for scraping
-    
+
     headers [str]: the headers to pass to the requests.get() method for scraping
     """
     # Scrape the consumption page
     artist_page = get_page(url, headers)
-    
+
     # find a tag that starts the section since the HTML is all flat
     start = artist_page.find('span', {'class': 'mw-headline'}, text = 'Discography').parent
-    
+
     # Isolate tags
     album_tags_parent = start.find_next_sibling('ul')
     album_tags = album_tags_parent.find_all('li')
@@ -71,8 +71,8 @@ def get_albums(url, headers):
     # Populate a dict with album titles and URL suffixes
     albums = {}
     for tag in album_tags:
-        albums[tag.i.a.getText()] = tag.i.a['href']   
-    
+        albums[tag.i.a.getText()] = tag.i.a['href']
+
     return albums
 
 
@@ -81,13 +81,13 @@ def get_album_info(title, url, headers):
     Returns
     -------
     A list of information for each track listed in the album
-    
+
     Parameters
     ---------
     title [str]: the album name
-    
+
     url [str]: the URL suffix of the album wikipedia page to pass to the requests.get() method for scraping
-    
+
     headers [str]: the headers to pass to the requests.get() method for scraping
     """
     album_page = get_page('https://www.wikipedia.org' + url, headers)
@@ -113,26 +113,50 @@ def get_album_info(title, url, headers):
     # Go through each row excluding the header row and final row. Header is accounted for
     # by starting range at 1
     for row_num in range(1, num_rows):
-        
-        # For each row, we iterate through each value and add the value to table
-        for i, value in enumerate(all_rows[row_num].find_all('td')):
+
+        # separate names in writers/producers columns
+        if i in [2, 3]:
+            table[col_titles[i]].append(separate_names(value))
+
+        # For other columns just extract text
+        else:
             table[col_titles[i]].append(value.getText())
-    
+
     return pd.DataFrame(table).set_index('No.')
 
 
+def separate_names(value):
+    """
+    Returns
+    -------
+    List with writer or procuder names separated and devoid of references e.g. [a]
+
+    Parameters
+    ----------
+    value [bs4.element.Tag]: the tag containing the table's entry for writers or producers
+    """
+    if value.ul:
+        # Isolate all li tags and extract text from those individually rather
+        lis = value.ul.find_all('li')
+#         print('lis', lis)
+        result = [li.getText() for li in lis]
+        return result
+    else:
+        return [value.getText()]
+
+
 if __name__ == '__main__':
-    
-    # Set up 
+
+    # Set up
     headers = {'user-agent': 'Safari/13.0.2 (Macintosh; Intel Mac OS X 10_15)'}
     url = 'https://en.wikipedia.org/wiki/Drake_(musician)#Discography'
-    
+
     # Get album names and urls
     albums = get_albums(url, headers)
-    
+
     # Empty container to store dict of dataframes
     album_dfs = {}
-    
+
     # Scrape each album's wikipedia page for album metadata
     for title, url in albums.items():
         album_dfs[title] = get_album_info(title, url, headers)
