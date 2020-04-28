@@ -1,3 +1,11 @@
+"""
+This module will scrape Wikipedia using Beautiful Soup given a musical artist's
+URL. Currently, it's tailored to work for just Drake. It does not parse or
+clean the information in any way.
+
+Author: M. Sanchez-Ayala (04/27/20)
+"""
+
 import pandas as pd
 from bs4 import BeautifulSoup as BS
 import requests
