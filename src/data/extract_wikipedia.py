@@ -76,55 +76,6 @@ def get_albums(url, headers):
     return albums
 
 
-def get_album_info(title, url, headers):
-    """
-    Returns
-    -------
-    A list of information for each track listed in the album
-
-    Parameters
-    ---------
-    title [str]: the album name
-
-    url [str]: the URL suffix of the album wikipedia page to pass to the requests.get() method for scraping
-
-    headers [str]: the headers to pass to the requests.get() method for scraping
-    """
-    album_page = get_page('https://www.wikipedia.org' + url, headers)
-
-    # find a tag that starts the section since the HTML is all flat
-    table_tag = album_page.find('table', {'class': 'tracklist'})
-
-    # Each row is nested within a top-level 'tr' tag
-    all_rows = table_tag.find_all('tr')
-
-    # Isolate the header row (uses th tag, different from other rows)
-    headers_row = all_rows[0].find_all('th')
-
-    # A container to store by column
-    table = {value.getText(): [] for value in headers_row}
-
-    # All column titles just to iterate through table keys later
-    col_titles = list(table.keys())
-
-    # We exlude the final row from this count, which stores the total play time for the album
-    num_rows = len(all_rows) - 1
-
-    # Go through each row excluding the header row and final row. Header is accounted for
-    # by starting range at 1
-    for row_num in range(1, num_rows):
-
-        # separate names in writers/producers columns
-        if i in [2, 3]:
-            table[col_titles[i]].append(separate_names(value))
-
-        # For other columns just extract text
-        else:
-            table[col_titles[i]].append(value.getText())
-
-    return pd.DataFrame(table).set_index('No.')
-
-
 def separate_names(value):
     """
     Returns
@@ -145,18 +96,69 @@ def separate_names(value):
         return [value.getText()]
 
 
-if __name__ == '__main__':
+def frame_table():
+    """
+    Returns
+    -------
+    A dict with keys as column headers and values as empty lists.
+    """
+    columns = ['No.', 'Title', 'Writer(s)', 'Producer(s)', 'Length']
 
-    # Set up
-    headers = {'user-agent': 'Safari/13.0.2 (Macintosh; Intel Mac OS X 10_15)'}
-    url = 'https://en.wikipedia.org/wiki/Drake_(musician)#Discography'
+    table = {column: [] for column in columns}
 
-    # Get album names and urls
-    albums = get_albums(url, headers)
+    return table, columns
 
-    # Empty container to store dict of dataframes
-    album_dfs = {}
 
-    # Scrape each album's wikipedia page for album metadata
-    for title, url in albums.items():
-        album_dfs[title] = get_album_info(title, url, headers)
+def get_album_info(title, url, headers):
+    """
+    Returns
+    -------
+    A list of information for each track listed in the album
+
+    Parameters
+    ----------
+    title [str]: the album name
+
+    url [str]: the URL suffix of the album wikipedia page to pass to the requests.get() method for scraping
+
+    headers [str]: the headers to pass to the requests.get() method for scraping
+    """
+    album_page = get_page('https://www.wikipedia.org' + url, headers)
+
+    # find a tag that starts the section since the HTML is all flat
+    table_tag = album_page.find('table', {'class': 'tracklist'})
+
+    # Each row is nested within a top-level 'tr' tag
+    all_rows = table_tag.find_all('tr')
+
+    # Isolate the header row (uses th tag, different from other rows)
+    headers_row = all_rows[0].find_all('th')
+
+    # A dict to store data by column, column names
+    table, col_titles = frame_table()
+
+    # We exlude the final row from this count, which stores the total play time for the album
+    num_rows = len(all_rows) - 1
+
+
+
+    # TODO: WRITE A HELPER CALLED populate_table(table, num_rows, col_titles)
+    # that encompasses the code below.
+
+    # Go through each row excluding the header row and final row. Header is 
+    # accounted for by starting range at 1
+    for row_num in range(1, num_rows):
+        print('row num', row_num)
+        # For each row, we iterate through each column and add the value to table
+        for i, value in enumerate(all_rows[row_num].find_all('td')):
+            
+            print('i', i)
+            # separate names in writers/producers columns
+            if i in [2, 3]:
+                table[col_titles[i]].append(separate_names(value))
+
+            # For other columns just extract text
+            else:
+                table[col_titles[i]].append(value.getText())
+
+    return pd.DataFrame(table).set_index('No.')
