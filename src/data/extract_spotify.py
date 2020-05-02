@@ -30,6 +30,7 @@ def get_auth():
 	else:
 		print("Can't get token for", username)
 
+
 def get_artist_id(artist, sp):
 	"""
 	Returns
@@ -47,16 +48,6 @@ def get_artist_id(artist, sp):
 	if len(items):
 		artist = items[0]
 		return artist['uri']
-
-def get_artist_albums(artist_id, sp):
-	"""
-	"""
-	# Can change any of these params
-	print(
-		sp.artist_albums(
-			artist_id, album_type='album', country=None, limit=50, offset=0
-		)
-	)
 
 
 def get_table(json):
@@ -78,12 +69,42 @@ def get_table(json):
 		table['album_id'].append(item['uri'])
 		table['release_date'].append(item['release_date'])
 		table['total_tracks'].append(item['total_tracks'])
+	
+	return table
 
+
+def get_artist_albums(artist_id, sp):
+	"""
+	"""
+	# Can change any of these params
+	artist_albums = sp.artist_albums(
+			artist_id, album_type='album', country=None, limit=50, offset=0
+	)
+	table = get_table(artist_albums)
+
+
+def get_album_tracks(album_id, sp):
+	"""
+	Returns
+	-------
+	Data on all of the tracks within the album corresponding to the supplied
+	album id.
+
+	Parameters
+	----------
+	album_id [str]: the Spotify album ID of the given album
+	"""
+	tracks = sp.album_tracks(album_id)
+	print(tracks)
 
 
 if __name__ == '__main__':
 
 	sp = get_auth()
-	artist_id = get_artist_id(artist, sp)
-	get_artist_albums(artist_id, sp)
-
+	# artist_id = get_artist_id(artist, sp)
+	# get_artist_albums(artist_id, sp)
+	print('So Far Gone 1')
+	get_album_tracks('spotify:album:1LShhEEKRT5MNPcO7jtYHh', sp)
+	print('\n\n')
+	print('So Far Gone 2')
+	get_album_tracks('spotify:album:2podUJIFG8hLfFz7Kqe8yJ', sp)
