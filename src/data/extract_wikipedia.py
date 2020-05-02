@@ -76,8 +76,25 @@ def get_albums(url, headers):
     return albums
 
 
+def frame_table():
+    """
+    Helper for get_album_info()
+
+    Returns
+    -------
+    A dict with keys as column headers and values as empty lists.
+    """
+    columns = ['No.', 'Title', 'Writer(s)', 'Producer(s)', 'Length']
+
+    table = {column: [] for column in columns}
+
+    return table, columns
+
+
 def separate_names(value):
     """
+    Helper for populate_table()
+
     Returns
     -------
     List with writer or procuder names separated and devoid of references e.g. [a]
@@ -96,17 +113,39 @@ def separate_names(value):
         return [value.getText()]
 
 
-def frame_table():
+def populate_table(table, all_rows, col_titles):
     """
-    Returns
-    -------
-    A dict with keys as column headers and values as empty lists.
+    Helper for get_album_info(). Populates the supplied empty table with the 
+    rows from `all_rows` using col_titles.
+
+    Parameters
+    ----------
+    table [dict]: dict containing column titles as keys. Each key has an 
+    empty list as its value.
+
+    all_rows [list]: All tags containing the data for each row of the table.
+
+    col_titles [list]: All of the names of each column.
     """
-    columns = ['No.', 'Title', 'Writer(s)', 'Producer(s)', 'Length']
+    # Final row excluded from this count, which stores the total play time for the album
+    num_rows = len(all_rows) - 1
 
-    table = {column: [] for column in columns}
+    # Go through each row excluding the header row and final row. Header is 
+    # accounted for by starting range at 1
+    for row_num in range(1, num_rows):
+        # print('row num', row_num)
 
-    return table, columns
+        # For each row, iterate through each column and add the value table
+        for i, value in enumerate(all_rows[row_num].find_all('td')):
+            
+            # print('i', i)
+            # separate names in writers/producers columns
+            if i in [2, 3]:
+                table[col_titles[i]].append(separate_names(value))
+
+            # For other columns just extract text
+            else:
+                table[col_titles[i]].append(value.getText())
 
 
 def get_album_info(title, url, headers):
@@ -131,34 +170,12 @@ def get_album_info(title, url, headers):
     # Each row is nested within a top-level 'tr' tag
     all_rows = table_tag.find_all('tr')
 
-    # Isolate the header row (uses th tag, different from other rows)
-    headers_row = all_rows[0].find_all('th')
+    # # Isolate the header row (uses th tag, different from other rows)
+    # headers_row = all_rows[0].find_all('th')
 
     # A dict to store data by column, column names
     table, col_titles = frame_table()
 
-    # We exlude the final row from this count, which stores the total play time for the album
-    num_rows = len(all_rows) - 1
-
-
-
-    # TODO: WRITE A HELPER CALLED populate_table(table, num_rows, col_titles)
-    # that encompasses the code below.
-
-    # Go through each row excluding the header row and final row. Header is 
-    # accounted for by starting range at 1
-    for row_num in range(1, num_rows):
-        print('row num', row_num)
-        # For each row, we iterate through each column and add the value to table
-        for i, value in enumerate(all_rows[row_num].find_all('td')):
-            
-            print('i', i)
-            # separate names in writers/producers columns
-            if i in [2, 3]:
-                table[col_titles[i]].append(separate_names(value))
-
-            # For other columns just extract text
-            else:
-                table[col_titles[i]].append(value.getText())
+    table = populate_table(table, all_rows, col_titles)
 
     return pd.DataFrame(table).set_index('No.')
