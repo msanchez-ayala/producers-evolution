@@ -10,10 +10,15 @@ from extract_wikipedia import *
 from transform import *
 
 
-def main():
+def extract_spotify():
     """
-    Currently returns a dict of all album information of an artist's albums 
-    that are listed on their Wikipedia page in separate dataframes.
+    Runs main extract_spotify functionality
+    """
+    pass
+
+def extract_wikipedia():
+    """
+    Runs main extract_spotify functionality
     """
     # Set up
     headers = {'user-agent': 'Safari/13.0.2 (Macintosh; Intel Mac OS X 10_15)'}
@@ -33,6 +38,15 @@ def main():
 
     return album_dfs
 
+def main():
+    """
+    Currently returns a dict of all album information of an artist's albums 
+    that are listed on their Wikipedia page in separate dataframes.
+    """
+
+    albums_metadata = extract_wikipedia()
+    albums_features = extract_spotify()
+
 
 if __name__ == '__main__':
-    main()
+    print(main())
